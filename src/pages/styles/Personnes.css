@@ -1,0 +1,11 @@
+.button-job  {
+    padding: 1rem;
+    background-color: #555555;
+    border: 0;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.button-job:active {
+    background-color: #444444;
+}
