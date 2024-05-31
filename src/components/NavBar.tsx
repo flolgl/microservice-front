@@ -3,10 +3,10 @@ import { NavLink } from "react-router-dom"
 export const NavBar = () => (
     <div style={{...ContainerCenter, ...NavBarStyle}}>
         <div style={Container}>
-            <NavLink to={"/logements"} style={styleLinks}>Logements</NavLink>
-            <NavLink to={"/personnes"} style={styleLinks}>Personnes</NavLink>
-            <NavLink to={"/visites"} style={styleLinks}>Visites</NavLink>
-            <NavLink to={"/transactions"} style={styleLinks}>Transactions</NavLink>
+            <NavLink to={"/logements"} style={styleLinks}>Available houses</NavLink>
+            <NavLink to={"/my-bookings"} style={styleLinks}>My bookings</NavLink>
+            <NavLink to={"/my-houses"} style={styleLinks}>My houses</NavLink>
+            <NavLink to={"/add-house"} style={styleLinks}>Add a house</NavLink>
         </div>
     </div>
 )

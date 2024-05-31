@@ -7,10 +7,11 @@ import {
 } from "react-router-dom";
 import './index.css'
 import { ErrorPage } from './pages/ErrorPage';
-import { Personnes } from './pages/Personnes';
+import { Locations } from './pages/Locations';
 import { Logements } from './pages/Logements';
 import { Transactions } from './pages/Transactions';
 import { Visites } from './pages/Vistes';
+import {AddHouse} from "./pages/AddHouse";
 
 const router = createBrowserRouter([
   {
@@ -19,8 +20,8 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: "/personnes",
-    element: <Personnes />,
+    path: "/my-bookings",
+    element: <Locations />,
     errorElement: <ErrorPage />,
   },
   {
@@ -34,8 +35,13 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: "/visites",
+    path: "/my-houses",
     element: <Visites />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/add-house",
+    element: <AddHouse />,
     errorElement: <ErrorPage />,
   },
 

@@ -1,209 +1,105 @@
-import { useEffect, useState } from "react"
-import { NavBar } from "../components/NavBar"
-import { Etat } from "../Types/Etat";
-import { Garage } from "../Types/Garage";
-import { Logement } from "../Types/Logement"
-import { Loue } from "../Types/Loue";
-import { Personne } from "../Types/Personne"
-import { PersonneHeritage } from "../Types/PersonneHeritage";
-import { Vendu } from "../Types/Vendu";
+import {useEffect, useState} from "react"
+import {NavBar} from "../components/NavBar"
+import {Booking} from "../Types/Booking"
 import "./styles/Personnes.css";
+import {Logement} from "../Types/Logement";
 
 export const Transactions = () => {
-    const [personnes, setPersonnes] = useState<Array<Personne>>([]);
-    const [logements, setLogements] = useState<Array<Logement>>([]);
-    const [etats, setEtats] = useState<Array<Etat>>([]);
-    const [garages, setGarages] = useState<Array<Garage>>([]);
-    const [vendus, setVendus] = useState<Array<Vendu>>([]);
-    const [loues, setLoues] = useState<Array<Loue>>([]);
-    const [typesToDisplay, setTypesToDisplay] = useState<Array<string>>(["Vendu", "Loué"]);
-    const [searchValue, setSearchValue] = useState<string>("");
-
+    const [bookingsEl, setBookingsEl] = useState<Array<JSX.Element>>([]);
     useEffect(() => {
-        console.log("Je suis là");
+        console.log("useEffect")
         Promise.all([
-            fetchAllPersonne(), 
-            fetchAllLogements(),
-            fetchAllEtats(),
-            fetchAllGarages(),
-            fetchAllVendus(),
-            fetchAllLocations()
+            buildBookings(),
         ])
 
     }, [])
 
-    const fetchAllPersonne = async () => {
-        fetch("http://localhost:8000/personne")
-            .then(res => res.json())
-            .then(res => setPersonnes(res))
-            .catch(error => setPersonnes([]));
-    }
-    const fetchAllLogements = async () => {
-        fetch("http://localhost:8000/logement")
-            .then(res => res.json())
-            .then(res => setLogements(res))
-            .catch(error => setLogements([]));
-    }
-    const fetchAllEtats = async () => {
-        fetch("http://localhost:8000/etat")
-            .then(res => res.json())
-            .then(res => setEtats(res))
-            .catch(error => setEtats([]));
-    }
-    const fetchAllGarages = async () => {
-        fetch("http://localhost:8000/garage")
-            .then(res => res.json())
-            .then(res => setGarages(res))
-            .catch(error => setGarages([]));
-    }
-    const fetchAllVendus = async () => {
-        fetch("http://localhost:8000/acheter")
-            .then(res => res.json())
-            .then(res => setVendus(res))
-            .catch(error => setVendus([]));
-    }
-    const fetchAllLocations = async () => {
-        fetch("http://localhost:8000/louer")
-            .then(res => res.json())
-            .then(res => setLoues(res))
-            .catch(error => setLoues([]));
+    const fetchAllHousesOfUser = async (): Promise<Array<Logement>> => {
+        const user = localStorage.getItem("user");
+        if (user === null) {
+            return [];
+        }
+        const userObj = JSON.parse(user);
+
+        const res = await fetch(`http://localhost:8081/House/owner/${userObj.id}`)
+        if (res.status !== 200)
+            return [];
+        return await res.json();
     }
 
-    const buildLogements = () => {
-        console.log(loues)
-        return logements.map((logement, index) => {
-            const vendu = vendus.find(vendu => vendu.Id_Logement === logement.Id_Logement)
-            const loue = loues.find(loue => loue.Id_Logement === logement.Id_Logement)
-            let state = "";
-            let dateAchat = "", dateFin = "", prix = "", client;
-            if (vendu){
-                state = "Vendu"
-                dateAchat = new Date(vendu?.DateAchat ?? "").toLocaleDateString(undefined, {year: "numeric", month:"numeric", day:"numeric"}) ?? "Inconnu";
-                prix = vendu?.Prix ?? "Inconnu"
-                client = personnes.find(personne => vendu.Id_Client === personne.Id_Personne);
-            }
-            if (loue){
-                state = "Loué";
-                dateAchat = new Date(loue?.Date_Debut ?? "").toLocaleDateString(undefined, {year: "numeric", month:"numeric", day:"numeric"}) ?? "Inconnu";
-                dateFin = new Date(loue?.Date_Fin ?? "").toLocaleDateString(undefined, {year: "numeric", month:"numeric", day:"numeric"}) ?? "Inconnu";
-                prix = loue.Prix ?? "Inconnu";
-                client = personnes.find(personne => loue.Id_Client === personne.Id_Personne);
-            }
-            if (!loue && !vendu)
-                return;
-            if (!typesToDisplay.includes(state))
-                return;
-            const garageNb = garages.filter((garage => garage.Id_Logement === logement.Id_Logement)).length + "";
-            const proprio = personnes.find((personne) => personne.Id_Personne === logement.Id_Personne);
-            const adresse = logement.Adresse + " " + logement.Ville,
-                nbPieces = logement.Nb_pieces + "",
-                etat = etats.at(logement.Id_Etat-1)?.Libellé ?? "Inconnu",
-                exProprio = (proprio?.Nom.toUpperCase() + " " + proprio?.Prenom) ?? "Inconnu",
-                clientNom = (client?.Nom.toUpperCase() + " " + client?.Prenom) ?? "Inconnu";
-            if (searchValue){
-                let isFound = false;
-                [adresse, garageNb, state, prix, nbPieces, etat, exProprio, clientNom, dateFin, dateAchat]
-                    .forEach(value => {
-                        if(value.toLocaleLowerCase().includes(searchValue))
-                            isFound = true;
-                    });
-                if (!isFound)
-                    return;
-            }
-                                
-
-            return buildLogementDiv(adresse, garageNb, index, state, prix, nbPieces, etat, exProprio, clientNom, dateFin, dateAchat)
+    const fetchAllBookingsOfHouses = async (houses: Array<Logement>) => {
+        const res = await fetch("http://localhost:8083/Booking/house/bookings", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(houses.map(house => house.id + ""))
         });
+        return await res.json();
     }
 
-    const buildLogementDiv = (adresse: string, garage: string, index: number, state: string,  prix: string, nbPieces: string, etat: string, exProprio: string, client: string, dateFin: string, dateDebut: string) => {
-        console.log(dateDebut);
+    const buildBookings = async () => {
+        const houses = await fetchAllHousesOfUser();
+        const bookingsOfHouses = await fetchAllBookingsOfHouses(houses);
+        const mappedLogements = bookingsOfHouses.map((booking: Booking, index: number) => {
+            return buildPersonDiv(booking, index, bookingsOfHouses.length);
+        });
+        setBookingsEl(mappedLogements);
+    }
+
+    const handleConfirm = async (booking: Booking) => {
+        const res = await fetch(`http://localhost:8083/Booking/${booking.id}/confirm`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({isConfirmed: true})
+        });
+        if (res.status === 200)
+            buildBookings();
+    }
+
+    const buildPersonDiv = (booking: Booking, index: number, max: number) => {
         return (
-            <div key={index} style={{display: "flex", justifyContent:"space-evenly", gap: "3rem", padding:"1rem", borderBottom : index === logements.length ? "1px solid #FFF" : "0"}}>
+            <div key={booking.id} style={{display: "flex", justifyContent:"space-evenly", gap: "3rem", padding:"1rem", borderBottom : index === max ? "1px solid #FFF" : "0"}}>
                 <div style={{width:"8rem"}}>
-                    <span>{adresse}</span>
-                </div>
-                <div style={{width:"2rem"}}>
-                    <span>{nbPieces}</span>
-                </div>
-                <div style={{width:"5rem"}}>
-                    <span>{prix}</span>
-                </div>
-                <div style={{width:"4rem"}}>
-                    <span>{dateDebut ?? ""}</span>
-                </div>
-                <div style={{width:"4rem"}}>
-                    <span>{dateFin ?? ""}</span>
-                </div>
-                <div style={{width:"4rem"}}>
-                    <span>{etat}</span>
-                </div>
-                <div style={{width:"2rem"}}>
-                    <span>{garage}</span>
+                    <span>{booking.startDate}</span>
                 </div>
                 <div style={{width:"8rem"}}>
-                    <span>{exProprio}</span>
+                    <span>{booking.endDate}</span>
                 </div>
                 <div style={{width:"8rem"}}>
-                    <span>{client}</span>
+                    <span>{booking.houseId}</span>
                 </div>
-                <div style={{width:"4rem"}}>
-                    <span>{state}</span>
+                <div style={{width:"8rem"}}>
+                    <button onClick={() => {handleConfirm(booking)}} disabled={booking.isConfirmed} className={"button-job"}>{booking.isConfirmed ? "Confirmed" : "Confirm"}</button>
                 </div>
             </div>
         )
     }
 
-    const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchValue(e.target.value.toLocaleLowerCase());
-    }
+
 
     return (
         <>
             <NavBar />
-            <div style={{display: "flex", justifyContent: "center", margin: "1rem 3rem", gap: "1rem"}}>
-                <button onClick={() => {setTypesToDisplay(["Vendu"])}} className={"button-job"}>Ventes</button>
-                <button onClick={() => {setTypesToDisplay(["Loué"])}} className={"button-job"}>Location</button>
-                <button onClick={() => {setTypesToDisplay(["Loué", "Vendu"])}} className={"button-job"}>Tous</button>
-            </div>
-            <div style={{display: "flex", justifyContent: "center", margin: "1rem 15rem", gap: "1rem"}}>
-                <input type="text" style={{padding:"0.5rem 0.5rem", width:"100%", border: "1px solid #FFF", borderRadius: "8px"}} onChange={handleSearchInput}/>
-            </div>
             <div style={{display: "flex", justifyContent: "center", margin: "1rem 3rem"}}>
                 <div style={{border: "1px solid #FFF", borderRadius:"8px"}}>
                     <div style={{display: "flex", justifyContent:"space-evenly", gap: "3rem", padding:"1rem", borderBottom : "1px solid #FFF"}}>
                         <div style={{width:"8rem"}}>
-                            <span>Adresse</span>
-                        </div>
-                        <div style={{width:"2rem"}}>
-                            <span>Nombre de pièces</span>
-                        </div>
-                        <div style={{width:"5rem"}}>
-                            <span>Prix</span>
-                        </div>
-                        <div style={{width:"4rem"}}>
-                            <span>Date achat/début</span>
-                        </div>
-                        <div style={{width:"4rem"}}>
-                            <span>Date de fin</span>
-                        </div>
-                        <div style={{width:"4rem"}}>
-                            <span>Etat</span>
-                        </div>
-                        <div style={{width:"2rem"}}>
-                            <span>Nb garage(s)</span>
+                            <span>A partir du</span>
                         </div>
                         <div style={{width:"8rem"}}>
-                            <span>Ex-propriétaire</span>
+                            <span>Jusqu'au</span>
                         </div>
                         <div style={{width:"8rem"}}>
-                            <span>Nouveau propriétaire</span>
+                            <span>Numéro de maison</span>
                         </div>
-                        <div style={{width:"5rem"}}>
-                            <span>Type transaction</span>
+                        <div style={{width:"8rem"}}>
+                            <span>Confirm</span>
                         </div>
                     </div>
-                    {logements ? buildLogements() : null}
+                    {bookingsEl ? bookingsEl : <></>}
                 </div>
             </div>
         </>
