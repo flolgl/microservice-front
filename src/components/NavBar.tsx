@@ -7,6 +7,7 @@ export const NavBar = () => (
             <NavLink to={"/my-bookings"} style={styleLinks}>My bookings</NavLink>
             <NavLink to={"/my-houses"} style={styleLinks}>My houses</NavLink>
             <NavLink to={"/add-house"} style={styleLinks}>Add a house</NavLink>
+            <NavLink to={"/transactions"} style={styleLinks}>Bookings to confirm</NavLink>
         </div>
     </div>
 )

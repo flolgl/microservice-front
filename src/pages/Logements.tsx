@@ -182,7 +182,7 @@ export const Logements = () => {
             return;
         }
         const user: Personne = await res.json();
-        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("user", JSON.stringify({id: user}));
         return;
     };
 
